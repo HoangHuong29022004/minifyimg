@@ -12,22 +12,27 @@ interface ProcessingOptions {
   }
 }
 
-interface ImageState {
-  // Thông tin ảnh gốc
+interface ImageItem {
+  id: string
   original: {
-    file: File | null
+    file: File
     preview: string
     size: number
-  } | null
-
-  // Thông tin ảnh đã xử lý
+  }
   processed: {
     blob: Blob | null
-    preview: string
-    size: number
+    preview: string | null
+    size: number | null
   } | null
+  processing: boolean
+  error: string | null
+}
 
-  // Trạng thái xử lý
+interface ImageState {
+  // Danh sách ảnh
+  images: ImageItem[]
+
+  // Trạng thái xử lý tổng thể
   processing: boolean
   error: string | null
 
@@ -35,8 +40,11 @@ interface ImageState {
   options: ProcessingOptions
 
   // Actions
-  setOriginal: (file: File) => void
-  setProcessed: (blob: Blob) => void
+  addImages: (files: File[]) => void
+  removeImage: (id: string) => void
+  updateImageProcessed: (id: string, blob: Blob) => void
+  updateImageProcessing: (id: string, processing: boolean) => void
+  updateImageError: (id: string, error: string | null) => void
   setProcessing: (processing: boolean) => void
   setError: (error: string | null) => void
   setOptions: (options: Partial<ProcessingOptions>) => void
@@ -53,36 +61,84 @@ const initialOptions: ProcessingOptions = {
   },
 }
 
-export const useImageStore = create<ImageState>((set) => ({
+export const useImageStore = create<ImageState>((set, get) => ({
   // Initial state
-  original: null,
-  processed: null,
+  images: [],
   processing: false,
   error: null,
   options: initialOptions,
 
   // Actions
-  setOriginal: (file: File) =>
-    set({
+  addImages: (files: File[]) => {
+    const newImages: ImageItem[] = files.map((file) => ({
+      id: Math.random().toString(36).substring(2) + Date.now().toString(36),
       original: {
         file,
         preview: URL.createObjectURL(file),
         size: file.size,
       },
       processed: null,
-      error: null,
-    }),
-
-  setProcessed: (blob: Blob) =>
-    set({
-      processed: {
-        blob,
-        preview: URL.createObjectURL(blob),
-        size: blob.size,
-      },
       processing: false,
       error: null,
-    }),
+    }))
+
+    set((state) => ({
+      images: [...state.images, ...newImages],
+      error: null,
+    }))
+  },
+
+  removeImage: (id: string) => {
+    set((state) => {
+      const imageToRemove = state.images.find((img) => img.id === id)
+      if (imageToRemove) {
+        // Cleanup object URLs
+        URL.revokeObjectURL(imageToRemove.original.preview)
+        if (imageToRemove.processed?.preview) {
+          URL.revokeObjectURL(imageToRemove.processed.preview)
+        }
+      }
+
+      return {
+        images: state.images.filter((img) => img.id !== id),
+      }
+    })
+  },
+
+  updateImageProcessed: (id: string, blob: Blob) => {
+    set((state) => ({
+      images: state.images.map((img) =>
+        img.id === id
+          ? {
+            ...img,
+            processed: {
+              blob,
+              preview: URL.createObjectURL(blob),
+              size: blob.size,
+            },
+            processing: false,
+            error: null,
+          }
+          : img
+      ),
+    }))
+  },
+
+  updateImageProcessing: (id: string, processing: boolean) => {
+    set((state) => ({
+      images: state.images.map((img) =>
+        img.id === id ? { ...img, processing } : img
+      ),
+    }))
+  },
+
+  updateImageError: (id: string, error: string | null) => {
+    set((state) => ({
+      images: state.images.map((img) =>
+        img.id === id ? { ...img, error, processing: false } : img
+      ),
+    }))
+  },
 
   setProcessing: (processing: boolean) => set({ processing }),
 
@@ -95,17 +151,16 @@ export const useImageStore = create<ImageState>((set) => ({
 
   reset: () => {
     set((state) => {
-      // Cleanup object URLs
-      if (state.original?.preview) {
-        URL.revokeObjectURL(state.original.preview)
-      }
-      if (state.processed?.preview) {
-        URL.revokeObjectURL(state.processed.preview)
-      }
+      // Cleanup tất cả object URLs
+      state.images.forEach((img) => {
+        URL.revokeObjectURL(img.original.preview)
+        if (img.processed?.preview) {
+          URL.revokeObjectURL(img.processed.preview)
+        }
+      })
 
       return {
-        original: null,
-        processed: null,
+        images: [],
         processing: false,
         error: null,
         options: initialOptions,

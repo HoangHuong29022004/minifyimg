@@ -11,44 +11,50 @@ const ACCEPTED_TYPES = {
 }
 
 /**
- * Component cho phép kéo thả hoặc chọn file ảnh
+ * Component cho phép kéo thả hoặc chọn nhiều file ảnh
  */
 export function ImageDropzone() {
-  const setOriginal = useImageStore((state) => state.setOriginal)
+  const addImages = useImageStore((state) => state.addImages)
   const setError = useImageStore((state) => state.setError)
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0]
-      if (!file) return
+      if (acceptedFiles.length === 0) return
 
-      if (!isImageFile(file)) {
-        setError("Vui lòng chọn file ảnh")
-        return
+      // Kiểm tra tất cả file
+      const validFiles: File[] = []
+      for (const file of acceptedFiles) {
+        if (!isImageFile(file)) {
+          setError(`File "${file.name}" không phải là ảnh`)
+          return
+        }
+
+        // Kiểm tra định dạng được hỗ trợ
+        if (!Object.keys(ACCEPTED_TYPES).includes(file.type)) {
+          setError(`Định dạng ảnh "${file.name}" không được hỗ trợ. Vui lòng sử dụng JPG, PNG hoặc WebP`)
+          return
+        }
+
+        validFiles.push(file)
       }
 
-      // Kiểm tra định dạng được hỗ trợ
-      if (!Object.keys(ACCEPTED_TYPES).includes(file.type)) {
-        setError("Định dạng ảnh không được hỗ trợ. Vui lòng sử dụng JPG, PNG hoặc WebP")
-        return
+      if (validFiles.length > 0) {
+        addImages(validFiles)
       }
-
-      setOriginal(file)
     },
-    [setOriginal, setError]
+    [addImages, setError]
   )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: ACCEPTED_TYPES,
-    maxFiles: 1,
-    multiple: false,
+    multiple: true,
   })
 
   return (
     <div
       {...getRootProps()}
-      className={`border border-2 rounded-3 d-flex flex-column align-items-center justify-content-center w-100" style={{height: '256px', cursor: 'pointer', background: isDragActive ? '#e9ecef' : '#f8f9fa'}}`}
+      className={`border-2 rounded-3 d-flex flex-column align-items-center justify-content-center w-100" style={{height: '256px', cursor: 'pointer', background: isDragActive ? '#e9ecef' : '#f8f9fa'}}`}
     >
       <input {...getInputProps()} />
       <div className="d-flex flex-column align-items-center justify-content-center pt-3 pb-4">
@@ -65,7 +71,7 @@ export function ImageDropzone() {
           )}
         </p>
         <p className="text-muted small">
-          JPG, PNG hoặc WebP
+          JPG, PNG hoặc WebP (có thể chọn nhiều ảnh)
         </p>
       </div>
     </div>

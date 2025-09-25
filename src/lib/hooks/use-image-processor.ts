@@ -55,19 +55,16 @@ async function convertImageFormat(
  */
 export function useImageProcessor() {
   const options = useImageStore((state) => state.options)
-  const original = useImageStore((state) => state.original)
-  const setProcessed = useImageStore((state) => state.setProcessed)
+  const images = useImageStore((state) => state.images)
+  const updateImageProcessed = useImageStore((state) => state.updateImageProcessed)
+  const updateImageProcessing = useImageStore((state) => state.updateImageProcessing)
+  const updateImageError = useImageStore((state) => state.updateImageError)
   const setProcessing = useImageStore((state) => state.setProcessing)
   const setError = useImageStore((state) => state.setError)
 
-  const processImage = useCallback(async () => {
-    if (!original?.file) {
-      setError("Không có ảnh để xử lý")
-      return
-    }
-
+  const processSingleImage = useCallback(async (imageId: string, file: File) => {
     try {
-      setProcessing(true)
+      updateImageProcessing(imageId, true)
 
       // Bước 1: Nén ảnh (nếu cần resize)
       let processedBlob: Blob
@@ -79,11 +76,11 @@ export function useImageProcessor() {
           fileType: 'image/png', // Sử dụng PNG để giữ chất lượng tốt nhất
           initialQuality: 1,
         }
-        const compressedFile = await imageCompression(original.file, compressionOptions)
+        const compressedFile = await imageCompression(file, compressionOptions)
         processedBlob = compressedFile
       } else {
         // Nếu không resize, sử dụng file gốc
-        processedBlob = original.file
+        processedBlob = file
       }
 
       // Bước 2: Chuyển đổi định dạng
@@ -94,14 +91,38 @@ export function useImageProcessor() {
       )
 
       // Cập nhật state
-      setProcessed(finalBlob)
+      updateImageProcessed(imageId, finalBlob)
+    } catch (error) {
+      console.error("Lỗi xử lý ảnh:", error)
+      updateImageError(imageId, "Có lỗi xảy ra khi xử lý ảnh")
+    }
+  }, [options, updateImageProcessed, updateImageProcessing, updateImageError])
+
+  const processAllImages = useCallback(async () => {
+    const unprocessedImages = images.filter(img => !img.processed && !img.processing)
+    
+    if (unprocessedImages.length === 0) {
+      setError("Không có ảnh nào để xử lý")
+      return
+    }
+
+    try {
+      setProcessing(true)
+      setError(null)
+
+      // Xử lý tất cả ảnh song song
+      const promises = unprocessedImages.map(image => 
+        processSingleImage(image.id, image.original.file)
+      )
+
+      await Promise.all(promises)
     } catch (error) {
       console.error("Lỗi xử lý ảnh:", error)
       setError("Có lỗi xảy ra khi xử lý ảnh")
     } finally {
       setProcessing(false)
     }
-  }, [original, options, setProcessed, setProcessing, setError])
+  }, [images, processSingleImage, setProcessing, setError])
 
-  return { processImage }
+  return { processAllImages, processSingleImage }
 } 

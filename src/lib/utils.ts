@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import JSZip from "jszip"
 
 /**
  * Kết hợp các class TailwindCSS và xử lý conflict
@@ -51,4 +52,35 @@ export function getBaseName(filename: string): string {
 export function createNewFilename(originalName: string, suffix: string, newFormat: string): string {
   const baseName = getBaseName(originalName)
   return `${baseName}${suffix}.${newFormat}`
+}
+
+/**
+ * Tạo file zip từ danh sách blob
+ */
+export async function createZipFromBlobs(
+  blobs: { blob: Blob; filename: string }[],
+  zipName: string = "processed_images.zip"
+): Promise<Blob> {
+  const zip = new JSZip()
+
+  // Thêm tất cả blob vào zip
+  for (const { blob, filename } of blobs) {
+    zip.file(filename, blob)
+  }
+
+  // Tạo file zip
+  const zipBlob = await zip.generateAsync({ type: "blob" })
+  return zipBlob
+}
+
+/**
+ * Tải file zip
+ */
+export function downloadZip(zipBlob: Blob, filename: string = "processed_images.zip"): void {
+  const url = URL.createObjectURL(zipBlob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
 } 
