@@ -9,8 +9,17 @@ const DropdownMenuContent = React.forwardRef(
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         ref={ref}
-        style={{zIndex: 9999, minWidth: '8rem'}}
-        className={`bg-light border rounded shadow-sm ${props.className || ''}`}
+        style={{
+          zIndex: 9999,
+          minWidth: '8rem',
+          backgroundColor: '#f8f9fa',
+          border: '1px solid #dee2e6',
+          borderRadius: '0.375rem',
+          boxShadow: '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)',
+          paddingTop: '0.5rem',
+          paddingBottom: '0.5rem'
+        }}
+        className={props.className}
         {...props}
       />
     </DropdownMenuPrimitive.Portal>
@@ -22,7 +31,12 @@ const DropdownMenuItem = React.forwardRef(
   (props: any, ref: any) => (
     <DropdownMenuPrimitive.Item
       ref={ref}
-      className={`dropdown-item py-2 px-3 ${props.className || ''}`}
+      style={{
+        padding: '0.5rem 0.75rem',
+        cursor: 'pointer',
+        transition: 'background-color 0.15s ease-in-out'
+      }}
+      className={`dropdown-item ${props.className || ''}`}
       {...props}
     />
   )
