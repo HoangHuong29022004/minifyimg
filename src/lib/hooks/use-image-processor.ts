@@ -91,7 +91,7 @@ async function convertImageFormat(
           mimeType = 'image/jpeg'
       }
 
-      // Chuyển đổi sang định dạng mới
+      // Chuyển đổi sang định dạng mới với nén
       canvas.toBlob(
         (blob) => {
           if (blob) {
@@ -130,29 +130,38 @@ export function useImageProcessor() {
     try {
       updateImageProcessing(imageId, true)
 
-      // Bước 1: Nén ảnh (nếu cần resize)
+      // Bước 1: Luôn nén ảnh trước
       let processedBlob: Blob
-      if (options.resize.enabled && (options.resize.width || options.resize.height)) {
-        const compressionOptions = {
-          maxSizeMB: 10, // Giá trị lớn để không ảnh hưởng đến chất lượng
-          maxWidthOrHeight: Math.max(options.resize.width || 0, options.resize.height || 0),
-          useWebWorker: true,
-          fileType: 'image/png', // Sử dụng PNG để giữ chất lượng tốt nhất
-          initialQuality: 1,
-        }
-        const compressedFile = await imageCompression(file, compressionOptions)
-        processedBlob = compressedFile
-      } else {
-        // Nếu không resize, sử dụng file gốc
-        processedBlob = file
+      
+      // Cấu hình nén dựa trên format đích
+      const compressionOptions: any = {
+        maxSizeMB: 2, // Giới hạn kích thước để nén tốt hơn
+        useWebWorker: true,
+        initialQuality: options.quality / 100, // Sử dụng quality từ settings
       }
 
-      // Bước 2: Chuyển đổi định dạng
-      const finalBlob = await convertImageFormat(
-        processedBlob,
-        options.format,
-        options.quality
-      )
+      // Thêm resize nếu được bật
+      if (options.resize.enabled && (options.resize.width || options.resize.height)) {
+        compressionOptions.maxWidthOrHeight = Math.max(options.resize.width || 0, options.resize.height || 0)
+      }
+
+      // Nén ảnh trước
+      const compressedFile = await imageCompression(file, compressionOptions)
+      processedBlob = compressedFile
+
+      // Bước 2: Chuyển đổi định dạng (nếu cần)
+      let finalBlob: Blob
+      if (file.type === `image/${options.format}` && options.quality >= 90) {
+        // Nếu format giống nhau và quality cao, sử dụng ảnh đã nén
+        finalBlob = processedBlob
+      } else {
+        // Chuyển đổi sang định dạng mới
+        finalBlob = await convertImageFormat(
+          processedBlob,
+          options.format,
+          options.quality
+        )
+      }
 
       // Cập nhật state
       updateImageProcessed(imageId, finalBlob)

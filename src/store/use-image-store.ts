@@ -53,7 +53,7 @@ interface ImageState {
 
 const initialOptions: ProcessingOptions = {
   format: "webp", // Mặc định là WebP vì nén tốt nhất
-  quality: 85, // Tăng chất lượng mặc định lên 85%
+  quality: 80, // Giảm xuống 80% để nén tốt hơn
   resize: {
     width: null,
     height: null,
