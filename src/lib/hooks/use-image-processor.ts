@@ -65,12 +65,23 @@ async function convertImageFormat(
 
       // Xác định MIME type cho format
       let mimeType: string
+      let compressionQuality = quality / 100
+      
       switch (format) {
         case 'jpeg':
           mimeType = 'image/jpeg'
           break
         case 'png':
           mimeType = 'image/png'
+          // PNG không hỗ trợ quality, nhưng chúng ta có thể giảm kích thước canvas
+          if (quality < 80) {
+            const scale = Math.max(0.7, quality / 100)
+            canvas.width = Math.floor(canvas.width * scale)
+            canvas.height = Math.floor(canvas.height * scale)
+            ctx.scale(scale, scale)
+            ctx.drawImage(img, 0, 0)
+          }
+          compressionQuality = 1 // PNG luôn dùng quality 1
           break
         case 'webp':
           mimeType = 'image/webp'
@@ -101,7 +112,7 @@ async function convertImageFormat(
           }
         },
         mimeType,
-        quality / 100
+        compressionQuality
       )
     }
 
@@ -135,9 +146,15 @@ export function useImageProcessor() {
       
       // Cấu hình nén dựa trên format đích
       const compressionOptions: any = {
-        maxSizeMB: 2, // Giới hạn kích thước để nén tốt hơn
+        maxSizeMB: 1, // Giới hạn kích thước nhỏ hơn để nén mạnh hơn
         useWebWorker: true,
         initialQuality: options.quality / 100, // Sử dụng quality từ settings
+      }
+
+      // Nén mạnh hơn cho PNG
+      if (file.type === 'image/png' || options.format === 'png') {
+        compressionOptions.maxSizeMB = 0.5 // Nén mạnh hơn cho PNG
+        compressionOptions.initialQuality = Math.max(0.6, options.quality / 100) // Tối thiểu 60%
       }
 
       // Thêm resize nếu được bật
@@ -151,9 +168,19 @@ export function useImageProcessor() {
 
       // Bước 2: Chuyển đổi định dạng (nếu cần)
       let finalBlob: Blob
-      if (file.type === `image/${options.format}` && options.quality >= 90) {
-        // Nếu format giống nhau và quality cao, sử dụng ảnh đã nén
-        finalBlob = processedBlob
+      if (file.type === `image/${options.format}`) {
+        // Nếu format giống nhau, kiểm tra kích thước
+        if (processedBlob.size < file.size) {
+          // Nếu ảnh đã nén nhỏ hơn, sử dụng nó
+          finalBlob = processedBlob
+        } else {
+          // Nếu vẫn lớn hơn, chuyển đổi để nén thêm
+          finalBlob = await convertImageFormat(
+            processedBlob,
+            options.format,
+            options.quality
+          )
+        }
       } else {
         // Chuyển đổi sang định dạng mới
         finalBlob = await convertImageFormat(
