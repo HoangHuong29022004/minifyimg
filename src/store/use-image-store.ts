@@ -1,6 +1,6 @@
 import { create } from "zustand"
 
-export type ImageFormat = "jpeg" | "webp" | "png"
+export type ImageFormat = "jpeg" | "webp" | "png" | "gif" | "bmp" | "tiff" | "avif" | "heic" | "heif"
 
 interface ProcessingOptions {
   format: ImageFormat

@@ -4,6 +4,37 @@ import { useImageStore } from "@/store/use-image-store"
 import type { ImageFormat } from "@/store/use-image-store"
 
 /**
+ * Chuyển đổi HEIC/HEIF sang định dạng khác
+ */
+async function convertHeicFormat(
+  inputBlob: Blob,
+  format: ImageFormat,
+  quality: number
+): Promise<Blob> {
+  try {
+    // Dynamic import để tránh lỗi SSR
+    const heic2any = (await import('heic2any')).default
+    
+    // Chuyển đổi HEIC/HEIF sang JPEG trước
+    const convertedBlob = await heic2any({
+      blob: inputBlob,
+      toType: "image/jpeg",
+      quality: quality / 100
+    }) as Blob
+
+    // Nếu format đích là JPEG, trả về luôn
+    if (format === "jpeg") {
+      return convertedBlob
+    }
+
+    // Nếu format đích khác JPEG, chuyển đổi tiếp
+    return convertImageFormat(convertedBlob, format, quality)
+  } catch (error) {
+    throw new Error('Không thể chuyển đổi định dạng HEIC/HEIF')
+  }
+}
+
+/**
  * Chuyển đổi ảnh sang định dạng khác
  */
 async function convertImageFormat(
@@ -11,6 +42,11 @@ async function convertImageFormat(
   format: ImageFormat,
   quality: number
 ): Promise<Blob> {
+  // Xử lý HEIC/HEIF riêng
+  if (inputBlob.type === 'image/heic' || inputBlob.type === 'image/heif') {
+    return convertHeicFormat(inputBlob, format, quality)
+  }
+
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => {
@@ -27,6 +63,34 @@ async function convertImageFormat(
       }
       ctx.drawImage(img, 0, 0)
 
+      // Xác định MIME type cho format
+      let mimeType: string
+      switch (format) {
+        case 'jpeg':
+          mimeType = 'image/jpeg'
+          break
+        case 'png':
+          mimeType = 'image/png'
+          break
+        case 'webp':
+          mimeType = 'image/webp'
+          break
+        case 'gif':
+          mimeType = 'image/gif'
+          break
+        case 'bmp':
+          mimeType = 'image/bmp'
+          break
+        case 'tiff':
+          mimeType = 'image/tiff'
+          break
+        case 'avif':
+          mimeType = 'image/avif'
+          break
+        default:
+          mimeType = 'image/jpeg'
+      }
+
       // Chuyển đổi sang định dạng mới
       canvas.toBlob(
         (blob) => {
@@ -36,7 +100,7 @@ async function convertImageFormat(
             reject(new Error('Không thể chuyển đổi định dạng'))
           }
         },
-        `image/${format}`,
+        mimeType,
         quality / 100
       )
     }

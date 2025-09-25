@@ -35,6 +35,8 @@ pnpm install
 
 # Chạy development server
 pnpm dev
+
+vercel --prod
 ```
 
 ## Cấu trúc thư mục

@@ -7,7 +7,13 @@ import { isImageFile } from "@/lib/utils"
 const ACCEPTED_TYPES = {
   'image/jpeg': ['.jpg', '.jpeg'],
   'image/png': ['.png'],
-  'image/webp': ['.webp']
+  'image/webp': ['.webp'],
+  'image/gif': ['.gif'],
+  'image/bmp': ['.bmp'],
+  'image/tiff': ['.tiff', '.tif'],
+  'image/avif': ['.avif'],
+  'image/heic': ['.heic'],
+  'image/heif': ['.heif']
 }
 
 /**
@@ -31,7 +37,7 @@ export function ImageDropzone() {
 
         // Kiểm tra định dạng được hỗ trợ
         if (!Object.keys(ACCEPTED_TYPES).includes(file.type)) {
-          setError(`Định dạng ảnh "${file.name}" không được hỗ trợ. Vui lòng sử dụng JPG, PNG hoặc WebP`)
+          setError(`Định dạng ảnh "${file.name}" không được hỗ trợ. Vui lòng sử dụng JPG, PNG, WebP, GIF, BMP, TIFF, AVIF, HEIC, HEIF`)
           return
         }
 
@@ -71,7 +77,7 @@ export function ImageDropzone() {
           )}
         </p>
         <p className="text-muted small">
-          JPG, PNG hoặc WebP (có thể chọn nhiều ảnh)
+          JPG, PNG, WebP, GIF, BMP, TIFF, AVIF, HEIC, HEIF (có thể chọn nhiều ảnh)
         </p>
       </div>
     </div>

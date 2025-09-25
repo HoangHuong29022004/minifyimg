@@ -16,6 +16,11 @@ const formats: { value: ImageFormat; label: string; description: string }[] = [
     description: "Định dạng hiện đại, nén tốt nhất"
   },
   { 
+    value: "avif", 
+    label: "AVIF",
+    description: "Định dạng mới nhất, nén siêu hiệu quả"
+  },
+  { 
     value: "jpeg", 
     label: "JPEG",
     description: "Phù hợp cho ảnh chụp, ảnh thực tế"
@@ -24,6 +29,31 @@ const formats: { value: ImageFormat; label: string; description: string }[] = [
     value: "png", 
     label: "PNG",
     description: "Chất lượng cao, hỗ trợ trong suốt"
+  },
+  { 
+    value: "gif", 
+    label: "GIF",
+    description: "Hỗ trợ ảnh động, nén không mất dữ liệu"
+  },
+  { 
+    value: "bmp", 
+    label: "BMP",
+    description: "Định dạng bitmap không nén"
+  },
+  { 
+    value: "tiff", 
+    label: "TIFF",
+    description: "Chất lượng cao, thường dùng trong in ấn"
+  },
+  { 
+    value: "heic", 
+    label: "HEIC",
+    description: "Định dạng Apple, nén hiệu quả"
+  },
+  { 
+    value: "heif", 
+    label: "HEIF",
+    description: "Định dạng Apple, hỗ trợ ảnh động"
   },
 ]
 
